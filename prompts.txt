@@ -1,0 +1,40 @@
+Session Prompt:
+Algorithm in @VoronoiDiagram.Core/FortuneAlgorithm.cs  produces some incorrect results and is very inefficient (compared to brute force). It is based on chapter 7 of @Computational Geometry.pdf . Analyze the code and suggest ways to fix it. Is it salvable or a total rework is needed?
+
+MiniMax M2.5 Free:
+Based on my analysis of `FortuneAlgorithm.cs` and supporting files, here's my assessment:
+
+**Code is salvageable but needs significant fixes.** It's not a complete rewrite, but has several issues:
+
+## Critical Issues
+
+1. **Wrong sweep position in arc search** (`FortuneAlgorithm.cs:133`)
+   - Uses `site.Location.Y + 1e-6` as sweep position - should use the actual sweep line Y from the event being processed
+   - This causes wrong breakpoint computation when determining which arc is above a new site
+
+2. **Inconsistent edge map lookups** (`FortuneAlgorithm.cs:271, 279`)
+   - Store uses `(min, max)` ordering correctly
+   - Lookups use same pattern but the code is convoluted and prone to bugs
+
+3. **Numerical precision issues** 
+   - Heavy use of magic epsilons (1e-9, 1e-6, 1e-12) throughout
+   - Breakpoint computation in BeachLine.cs:356 uses 1e-12 which is too tight
+
+4. **Degenerate case fallback is O(n^4)** (lines 598-668)
+   - `ComputeAllVoronoiVertices` checks ALL triples - acceptable as fallback but indicates core algorithm weakness
+
+## What's Correct
+
+- Beach line BST structure (BeachLine.cs) - proper 3-leaf split on insert
+- Breakpoint X formula - standard textbook derivation
+- Circle event detection with empty-circle check
+- DCEL structure
+
+## Fix Priority
+
+1. Pass actual sweepY from events to `FindArcAbove()` instead of computing fake offset
+2. Clean up edge map key handling for consistency  
+3. Relax numerical tolerances (1e-9 → 1e-6 for collinearity, etc.)
+4. Test thoroughly with degenerate inputs (collinear, grid, nearly-collinear)
+
+The algorithm architecture is sound - this is a patch fix, not a total rewrite. Want me to proceed with implementing these fixes?
